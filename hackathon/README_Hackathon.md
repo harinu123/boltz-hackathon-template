@@ -165,9 +165,11 @@ The first path will be your top 1 prediction, and we will evaluate up to 5 predi
 
 For the allosteric-orthosteric ligand challenge, there are similar functions as for antibody-antigen complex challenge explained above. Here are summarized only parts of code that differ between the two challenges, so please first read the above explanations.
 
+> 📘 **Need a ready-to-run walkthrough?** Follow the [Allosteric Template-Matching Workflow](../docs/allosteric_workflow.md) guide for copy/paste commands covering environment setup, prediction, and evaluation.
+
 `def prepare_protein_ligand(datapoint_id: str, protein: Protein, ligands: list[SmallMolecule], input_dict: dict, msa_dir: Optional[Path] = None) -> list[tuple[dict, list[str]]]:`
 
-Here, `protein` is a single protein object and `ligands` is a list containing a single small molecule object (defined in `hackathon_api.SmallMolecule`). 
+Here, `protein` is a single protein object and `ligands` is a list containing a single small molecule object (defined in `hackathon_api.SmallMolecule`).
 
 **_NOTE_**: We initially thought of allowing multiple ligands, but for this challenge we will only have a single ligand per data point.
 

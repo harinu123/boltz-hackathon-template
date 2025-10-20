@@ -1,5 +1,6 @@
 # predict_hackathon.py
 import argparse
+import copy
 import json
 import os
 import shutil
@@ -10,6 +11,7 @@ from typing import Any, List, Optional
 
 import yaml
 from hackathon_api import Datapoint, Protein, SmallMolecule
+from boltz.pockets import AllostericTemplateMatcher
 
 # ---------------------------------------------------------------------------
 # ---- Participants should modify these four functions ----------------------
@@ -48,6 +50,27 @@ def prepare_protein_complex(datapoint_id: str, proteins: List[Protein], input_di
     cli_args = ["--diffusion_samples", "5"]
     return [(input_dict, cli_args)]
 
+_ALLOSTERIC_MATCHER = AllostericTemplateMatcher()
+
+
+def _resolve_msa_path(protein: Protein, msa_dir: Optional[Path]) -> Optional[Path]:
+    if not protein.msa:
+        return None
+    msa_path = Path(protein.msa)
+    if not msa_path.is_absolute() and msa_dir is not None:
+        msa_path = msa_dir / msa_path
+    return msa_path
+
+
+def _summarize_match(datapoint_id: str, match) -> None:
+    message = (
+        f"[Allosteric] {datapoint_id}: selected template {match.template_name} "
+        f"(confidence={match.confidence:.2f}, coverage={match.coverage:.2f}, "
+        f"conservation={match.conservation:.2f})"
+    )
+    print(message, flush=True)
+
+
 def prepare_protein_ligand(datapoint_id: str, protein: Protein, ligands: list[SmallMolecule], input_dict: dict, msa_dir: Optional[Path] = None) -> List[tuple[dict, List[str]]]:
     """
     Prepare input dict and CLI args for a protein-ligand prediction.
@@ -76,9 +99,93 @@ def prepare_protein_ligand(datapoint_id: str, protein: Protein, ligands: list[Sm
     #
     # will add contact constraints to the input_dict
 
-    # Example: predict 5 structures
-    cli_args = ["--diffusion_samples", "5"]
-    return [(input_dict, cli_args)]
+    configs: List[tuple[dict, List[str]]] = []
+    base_cli = [
+        "--model", "boltz2",
+        "--diffusion_samples", "6",
+        "--recycling_steps", "4",
+        "--sampling_steps", "250",
+    ]
+
+    resolved_msa = _resolve_msa_path(protein, msa_dir)
+    matcher_results = []
+    try:
+        matcher_results = _ALLOSTERIC_MATCHER.find_best_matches(
+            protein.sequence,
+            resolved_msa,
+            top_n=3,
+        )
+    except Exception as exc:  # pragma: no cover - defensive logging for hackathon runs
+        print(f"[Allosteric] {datapoint_id}: failed to evaluate templates ({exc})", flush=True)
+        matcher_results = []
+
+    confident_matches = [match for match in matcher_results if match.confidence >= 0.35]
+
+    if ligands:
+        ligand_id = ligands[0].id
+    else:  # pragma: no cover - hackathon datasets always contain a ligand
+        ligand_id = "LIG"
+
+    seq_length = len(protein.sequence)
+    for match_idx, match in enumerate(confident_matches[:2]):
+        _summarize_match(datapoint_id, match)
+        input_copy = copy.deepcopy(input_dict)
+        residues = _ALLOSTERIC_MATCHER.expand_residue_indices(
+            match.residues,
+            sequence_length=seq_length,
+            flank=1,
+            max_residues=18,
+        )
+        contacts = [[protein.id, residue] for residue in residues]
+        constraint = {
+            "pocket": {
+                "binder": ligand_id,
+                "contacts": contacts,
+                "max_distance": 7.0,
+                "force": False,
+            }
+        }
+        input_copy.setdefault("constraints", []).append(constraint)
+        metadata = input_copy.setdefault("metadata", {})
+        metadata["allosteric_template"] = {
+            "name": match.template_name,
+            "confidence": match.confidence,
+            "coverage": match.coverage,
+            "conservation": match.conservation,
+            "z_score": match.z_score,
+            "residues": residues,
+            "window_sequence": match.window_sequence,
+            "consensus_sequence": match.consensus_sequence,
+            "alignment_depth": match.alignment_depth,
+            **match.metadata,
+        }
+
+        cli_args = [
+            "--model", "boltz2",
+            "--diffusion_samples", "12" if match_idx == 0 else "8",
+            "--recycling_steps", "6",
+            "--sampling_steps", "300",
+            "--step_scale", "1.2",
+            "--use_potentials",
+        ]
+        configs.append((input_copy, cli_args))
+
+    if not configs:
+        if matcher_results:
+            top = matcher_results[0]
+            print(
+                f"[Allosteric] {datapoint_id}: no confident template match found, "
+                f"best candidate {top.template_name} had confidence {top.confidence:.2f}",
+                flush=True,
+            )
+        else:
+            print(
+                f"[Allosteric] {datapoint_id}: no template match found, running baseline settings",
+                flush=True,
+            )
+
+    configs.append((copy.deepcopy(input_dict), base_cli))
+    return configs
 
 def post_process_protein_complex(datapoint: Datapoint, input_dicts: List[dict[str, Any]], cli_args_list: List[list[str]], prediction_dirs: List[Path]) -> List[Path]:
     """
