@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Kinase_TypeII_DFG_Allosteric",
+    "family": "Protein kinase",
+    "sequence": "DFGWSLGLAELIHSLN",
+    "pocket_indices": [0, 1, 2, 5, 8, 11, 14],
+    "description": "Back pocket spanning the DFG motif and alphaC helix used by type-II kinase inhibitors.",
+    "source": "PDB:4WAF chain A",
+    "min_coverage": 0.35
+  },
+  {
+    "name": "GPCR_TM6_TM7_NAM",
+    "family": "Class A GPCR",
+    "sequence": "CWLPFFLMLGLYYMFVV",
+    "pocket_indices": [0, 3, 6, 9, 12, 15],
+    "description": "Transmembrane 6/7 cleft targeted by negative allosteric modulators of GPCRs.",
+    "source": "PDB:6PS6 chain A",
+    "min_coverage": 0.30
+  },
+  {
+    "name": "Nuclear_Receptor_AF2",
+    "family": "Nuclear receptor",
+    "sequence": "WQRFYQLLLQLLQEQ",
+    "pocket_indices": [0, 3, 5, 8, 11, 13],
+    "description": "Allosteric AF-2 co-regulator pocket within ligand binding domain.",
+    "source": "PDB:5JFA chain A",
+    "min_coverage": 0.25
+  },
+  {
+    "name": "Serine_Protease_Exosite",
+    "family": "Serine protease",
+    "sequence": "GGAGGNVGDSGGPLV",
+    "pocket_indices": [1, 4, 6, 8, 9, 12, 14],
+    "description": "Exosite pocket near the catalytic triad engaged by allosteric thrombin modulators.",
+    "source": "PDB:6CSE chain A",
+    "min_coverage": 0.28
+  }
+]
