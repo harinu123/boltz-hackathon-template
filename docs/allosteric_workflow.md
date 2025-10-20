@@ -27,42 +27,54 @@ After extraction the layout that matters for the allosteric task is:
 
 ```
 hackathon_data/
-└── datasets/
-    └── asos_public/
-        ├── asos_public.jsonl      # task definitions
-        ├── msa/                   # per-target MSAs consumed by the matcher
-        └── baseline_submission/   # optional reference predictions
+├── datasets/
+│   └── asos_public/
+│       ├── asos_public.jsonl      # task definitions
+│       ├── msa/                   # per-target MSAs consumed by the matcher
+│       └── baseline_submission/   # optional reference predictions
+├── submission/                    # (optional) where you keep your own predictions
+├── evaluation/                    # (optional) where you keep evaluation outputs
+└── intermediate_files/            # (optional) scratch space between runs
 ```
 
 ## 3. Run allosteric predictions
 The driver script wires in the `AllostericTemplateMatcher` and automatically applies pocket constraints and tuned Boltz-2 sampling configs when a confident template hit is found. Point the script at the ASOS JSONL file, the corresponding MSA directory, and choose output folders for predictions and evaluation artifacts.
 
+To make copy/paste easier regardless of where you extracted the bundle, set an environment variable pointing at the unpacked directory. The example below mirrors a common layout such as `/home/ubuntu/hari/hackathon_data`.
+
 ```bash
+export HACKATHON_DATA=/path/to/hackathon_data
+mkdir -p \ \
+  "${HACKATHON_DATA}/submission/asos_predictions" \ \
+  "${HACKATHON_DATA}/intermediate_files/asos_tmp" \ \
+  "${HACKATHON_DATA}/evaluation/asos_results"
+
 python hackathon/predict_hackathon.py \
-    --input-jsonl hackathon_data/datasets/asos_public/asos_public.jsonl \
-    --msa-dir hackathon_data/datasets/asos_public/msa/ \
-    --submission-dir ./asos_predictions/ \
-    --intermediate-dir ./asos_tmp/ \
-    --result-folder ./asos_results/
+    --input-jsonl "${HACKATHON_DATA}/datasets/asos_public/asos_public.jsonl" \
+    --msa-dir "${HACKATHON_DATA}/datasets/asos_public/msa/" \
+    --submission-dir "${HACKATHON_DATA}/submission/asos_predictions/" \
+    --intermediate-dir "${HACKATHON_DATA}/intermediate_files/asos_tmp/" \
+    --result-folder "${HACKATHON_DATA}/evaluation/asos_results/"
 ```
 
 Key outputs:
 
-- `./asos_predictions/<datapoint_id>/model_*.pdb` – ranked PDBs emitted for each datapoint
-- `./asos_tmp/` – intermediate YAMLs, raw Boltz outputs, and logs (safe to delete afterwards)
-- `./asos_results/combined_results.csv` – evaluation summary with ligand RMSDs for the allosteric subset and the full set
+- `${HACKATHON_DATA}/submission/asos_predictions/<datapoint_id>/model_*.pdb` – ranked PDBs emitted for each datapoint
+- `${HACKATHON_DATA}/intermediate_files/asos_tmp/` – intermediate YAMLs, raw Boltz outputs, and logs (safe to delete afterwards)
+- `${HACKATHON_DATA}/evaluation/asos_results/combined_results.csv` – evaluation summary with ligand RMSDs for the allosteric subset and the full set
 
 ## 4. Evaluate existing predictions only
 If you already have predictions organised in the submission layout (five ranked models per datapoint), rerun scoring without regenerating structures:
 
 ```bash
+export HACKATHON_DATA=/path/to/hackathon_data
 python hackathon/evaluate_asos.py \
-    --dataset-file hackathon_data/datasets/asos_public/asos_public.jsonl \
-    --submission-folder ./asos_predictions/ \
-    --result-folder ./asos_results/
+    --dataset-file "${HACKATHON_DATA}/datasets/asos_public/asos_public.jsonl" \
+    --submission-folder "${HACKATHON_DATA}/submission/asos_predictions/" \
+    --result-folder "${HACKATHON_DATA}/evaluation/asos_results/"
 ```
 
-The evaluator prints aggregate RMSDs to the console and refreshes the CSV/plots inside `./asos_results/`.
+The evaluator prints aggregate RMSDs to the console and refreshes the CSV/plots inside `${HACKATHON_DATA}/evaluation/asos_results/`.
 
 ## 5. Customising template matching
 Advanced users can tweak the supplied matcher and template library:

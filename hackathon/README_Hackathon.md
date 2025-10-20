@@ -32,7 +32,16 @@ The data includes the actual datasets, pre-computed MSAs, example predictions an
 wget https://d2v9mdonbgo0hk.cloudfront.net/hackathon_data.tar.gz
 mkdir hackathon_data
 tar -xvf hackathon_data.tar.gz -C hackathon_data
+export HACKATHON_DATA=$(pwd)/hackathon_data
 ```
+
+If you unpacked the archive elsewhere (for example `/home/ubuntu/hari/hackathon_data`), just point the variable there:
+
+```
+export HACKATHON_DATA=/home/ubuntu/hari/hackathon_data
+```
+
+Downstream commands in this README and in [the allosteric workflow guide](../docs/allosteric_workflow.md) reference `${HACKATHON_DATA}` so you can copy & paste without editing paths by hand.
 
 ## Quick Start ⚡️
 
@@ -47,14 +56,14 @@ To participate in the hackathon:
    We explain the functions in more detail below.
 
 2. **Run predictions**: Execute the prediction script on a validation dataset:
-   ```bash
-    python hackathon/predict_hackathon.py \
-        --input-jsonl hackathon_data/datasets/abag_public/abag_public.jsonl \
-        --msa-dir hackathon_data/datasets/abag_public/msa/ \
+    ```bash
+     python hackathon/predict_hackathon.py \
+        --input-jsonl "${HACKATHON_DATA}/datasets/abag_public/abag_public.jsonl" \
+        --msa-dir "${HACKATHON_DATA}/datasets/abag_public/msa/" \
         --submission-dir ./my_predictions \
         --intermediate-dir ./tmp/ \
         --result-folder ./my_results
-   ```
+    ```
 
   - `--input-jsonl` provides information about task type, input molecules, and ground truth for evaluation
   - `--msa-dir` contains the pre-computed MSA
@@ -226,8 +235,8 @@ To run the prediction and evaluation, use:
 
 ```bash
 python hackathon/predict_hackathon.py \
-    --input-jsonl hackathon_data/datasets/abag_public/abag_public.jsonl \
-    --msa-dir hackathon_data/datasets/abag_public/msa/ \
+    --input-jsonl "${HACKATHON_DATA}/datasets/abag_public/abag_public.jsonl" \
+    --msa-dir "${HACKATHON_DATA}/datasets/abag_public/msa/" \
     --submission-dir <SUBMISSION_DIR> \
     --intermediate-dir ./tmp/ \
     --result-folder <RESULT_DIR>
@@ -240,7 +249,7 @@ If you just want to run the evaluation on already existing predictions:
 
 ```bash
 python hackathon/evaluate_abag.py \
-    --dataset-file hackathon_data/datasets/abag_public/abag_public.jsonl \
+    --dataset-file "${HACKATHON_DATA}/datasets/abag_public/abag_public.jsonl" \
     --submission-folder SUBMISSION_DIR \
     --result-folder ./abag_public_evaluation/
 ```
@@ -269,8 +278,8 @@ To run the prediction and evaluation, use:
 
 ```bash
 python hackathon/predict_hackathon.py \
-    --input-jsonl hackathon_data/datasets/asos_public/asos_public.jsonl \
-    --msa-dir hackathon_data/datasets/asos_public/msa/ \
+    --input-jsonl "${HACKATHON_DATA}/datasets/asos_public/asos_public.jsonl" \
+    --msa-dir "${HACKATHON_DATA}/datasets/asos_public/msa/" \
     --submission-dir <SUBMISSION_DIR> \
     --intermediate-dir ./tmp/ \
     --result-folder <RESULT_DIR>
@@ -283,7 +292,7 @@ If you just want to run the evaluation on already existing predictions:
 
 ```bash
 python hackathon/evaluate_asos.py \
-    --dataset-file hackathon_data/datasets/asos_public/asos_public.jsonl \
+    --dataset-file "${HACKATHON_DATA}/datasets/asos_public/asos_public.jsonl" \
     --submission-folder SUBMISSION_DIR \
     --result-folder ./asos_public_evaluation/
 ```
